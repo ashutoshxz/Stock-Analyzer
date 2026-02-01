@@ -1,5 +1,5 @@
 # 📊 Live Stock Analyzer - Complete Financial Analysis Platform
-
+(Built using Claude)
 A comprehensive web application that fetches **live data from Screener.in** to provide detailed stock analysis including financials, ratios, news impact, and price charts.
 
 ![Stock Analyzer Demo](https://img.shields.io/badge/Status-Production%20Ready-success)
