@@ -5,9 +5,7 @@ A comprehensive web application that fetches **live data from Screener.in** to p
 ![Stock Analyzer Demo](https://img.shields.io/badge/Status-Production%20Ready-success)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-
 ## 🌟 Features
-
 ### 📈 Real-Time Data Fetching
 - **Live data from Screener.in** - No hardcoded mock data
 - Search any NSE/BSE listed company
@@ -382,4 +380,4 @@ Having issues?
 
 **Built with ❤️ for investors and financial analysts**
 
-*Last Updated: 2024*
+*Last Updated: 2026*
