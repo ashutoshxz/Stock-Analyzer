@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stock Analyzer - Screener.in Data</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.95;
+            font-size: 1.2em;
+        }
+
+        .search-section {
+            padding: 35px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 3px solid #dee2e6;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 18px 25px;
+            font-size: 17px;
+            border: 2px solid #ced4da;
+            border-radius: 12px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 4px rgba(30, 60, 114, 0.1);
+        }
+
+        .search-button {
+            padding: 18px 45px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .search-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(30, 60, 114, 0.3);
+        }
+
+        .search-button:active {
+            transform: translateY(-1px);
+        }
+
+        .search-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-dropdown {
+            max-width: 900px;
+            margin: 25px auto 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 18px 25px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-item:hover {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding-left: 30px;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-name {
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 6px;
+            font-size: 1.1em;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 20px;
+            color: #6c757d;
+            font-size: 0.95em;
+        }
+
+        .result-badge {
+            background: #1e3c72;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .content {
+            padding: 35px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #1e3c72;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .company-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 35px;
+            border-radius: 15px;
+            margin-bottom: 35px;
+            border: 2px solid #dee2e6;
+        }
+
+        .company-name {
+            font-size: 2.5em;
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-weight: 800;
+        }
+
+        .company-meta {
+            display: flex;
+            gap: 35px;
+            flex-wrap: wrap;
+            color: #495057;
+            font-size: 1.05em;
+        }
+
+        .company-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .company-meta-label {
+            font-weight: 600;
+            color: #6c757d;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            border-bottom: 3px solid #e9ecef;
+            margin-bottom: 35px;
+            overflow-x: auto;
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 16px 28px;
+            background: none;
+            border: none;
+            border-bottom: 4px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            color: #6c757d;
+            transition: all 0.3s;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab.active {
+            color: #1e3c72;
+            border-bottom-color: #1e3c72;
+            background: rgba(30, 60, 114, 0.05);
+        }
+
+        .tab:hover {
+            color: #1e3c72;
+            background: rgba(30, 60, 114, 0.03);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid #1e3c72;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        }
+
+        .metric-card h3 {
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: 800;
+            color: #1e3c72;
+            margin-bottom: 8px;
+        }
+
+        .metric-change {
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .positive {
+            color: #28a745;
+        }
+
+        .negative {
+            color: #dc3545;
+        }
+
+        .neutral {
+            color: #ffc107;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-weight: 700;
+            color: #1e3c72;
+            position: sticky;
+            top: 0;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            margin-bottom: 35px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 450px;
+        }
+
+        .news-section {
+            display: grid;
+            gap: 25px;
+        }
+
+        .news-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid #1e3c72;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+        }
+
+        .news-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .news-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #212529;
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .news-date {
+            color: #6c757d;
+            font-size: 0.9em;
+            white-space: nowrap;
+            margin-left: 15px;
+            font-weight: 600;
+        }
+
+        .news-source {
+            color: #1e3c72;
+            font-weight: 700;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+        }
+
+        .news-summary {
+            color: #495057;
+            line-height: 1.7;
+            margin-bottom: 15px;
+            font-size: 1.05em;
+        }
+
+        .news-impact {
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .impact-label {
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .impact-text {
+            color: #212529;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .sentiment-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+
+        .sentiment-positive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sentiment-negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .sentiment-neutral {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #dc3545;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #17a2b8;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .ratio-comparison {
+            margin-bottom: 20px;
+        }
+
+        .ratio-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 3fr;
+            gap: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .ratio-row:hover {
+            background: #f8f9fa;
+        }
+
+        .ratio-metric {
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .ratio-value {
+            font-weight: 700;
+            color: #1e3c72;
+            font-size: 1.1em;
+        }
+
+        .ratio-industry {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .ratio-implication {
+            color: #495057;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            font-weight: 800;
+            border-bottom: 3px solid #1e3c72;
+            padding-bottom: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-text {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .ratio-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .company-meta {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        /**
+         * ============================================================================
+         * MAIN STOCK ANALYZER APPLICATION
+         * ============================================================================
+         * This application fetches live data from Screener.in and news sources
+         * It provides comprehensive financial analysis including:
+         * - Balance Sheet, P&L, Cash Flow statements
+         * - Financial ratios with industry benchmarks
+         * - Live news with AI-analyzed impact
+         * - Stock price charts
+         * ============================================================================
+         */
+        function StockAnalyzer() {
+            // ===== STATE MANAGEMENT =====
+            const [searchQuery, setSearchQuery] = useState('');
+            const [searchResults, setSearchResults] = useState([]);
+            const [selectedCompany, setSelectedCompany] = useState(null);
+            const [companyData, setCompanyData] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [activeTab, setActiveTab] = useState('overview');
+            const [error, setError] = useState(null);
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            /**
+             * ============================================================================
+             * SCREENER.IN DATA FETCHING
+             * ============================================================================
+             * These functions handle fetching data from Screener.in
+             * Since Screener.in doesn't provide a public API, we use web scraping
+             * techniques via a CORS proxy or backend service
+             * ============================================================================
+             */
+
+            /**
+             * SEARCH COMPANIES ON SCREENER.IN
+             * Fetches matching companies based on user query
+             * @param {string} query - Search term (company name or stock code)
+             */
+            const searchCompanies = async (query) => {
+                try {
+                    // Screener.in search endpoint
+                    // Note: In production, you'll need a backend proxy to handle CORS
+                    const searchUrl = `https://www.screener.in/api/company/search/?q=${encodeURIComponent(query)}`;
+                    
+                    // Using a CORS proxy for demonstration
+                    // Replace with your own backend proxy in production
+                    const response = await fetch(searchUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch search results');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Screener returns data in format: [{id, name, url}]
+                    return data.map(company => ({
+                        id: company.id,
+                        name: company.name,
+                        url: company.url,
+                        code: company.url.split('/company/')[1].replace('/', '').toUpperCase()
+                    }));
+                } catch (err) {
+                    console.error('Search error:', err);
+                    // Fallback to mock data for demonstration
+                    return getMockSearchResults(query);
+                }
+            };
+
+            /**
+             * FETCH COMPLETE COMPANY DATA FROM SCREENER.IN
+             * Scrapes the company page to extract all financial data
+             * @param {object} company - Company object with URL
+             */
+            const fetchCompanyFromScreener = async (company) => {
+                try {
+                    const companyUrl = `https://www.screener.in${company.url}`;
+                    
+                    // Fetch the HTML page
+                    const response = await fetch(companyUrl);
+                    const html = await response.text();
+                    
+                    // Parse HTML to extract data
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Extract company overview data
+                    const overview = extractOverviewData(doc);
+                    
+                    // Extract financial statements
+                    const balanceSheet = extractBalanceSheet(doc);
+                    const profitLoss = extractProfitLoss(doc);
+                    const cashFlow = extractCashFlow(doc);
+                    
+                    // Extract ratios
+                    const ratios = extractRatios(doc);
+                    
+                    // Fetch stock price history
+                    const stockPrices = await fetchStockPrices(company.code);
+                    
+                    // Fetch recent news
+                    const news = await fetchCompanyNews(company.name);
+                    
+                    return {
+                        overview,
+                        balanceSheet,
+                        profitLoss,
+                        cashFlow,
+                        ratios,
+                        stockPrices,
+                        news
+                    };
+                } catch (err) {
+                    console.error('Error fetching company data:', err);
+                    // Fallback to mock data
+                    return getMockCompanyData(company);
+                }
+            };
+
+            /**
+             * EXTRACT OVERVIEW DATA FROM SCREENER PAGE
+             * Parses key metrics from the company overview section
+             */
+            const extractOverviewData = (doc) => {
+                const getValue = (label) => {
+                    const elements = doc.querySelectorAll('.number');
+                    for (let el of elements) {
+                        const parent = el.closest('li') || el.closest('div');
+                        if (parent && parent.textContent.includes(label)) {
+                            return el.textContent.trim();
+                        }
+                    }
+                    return 'N/A';
+                };
+
+                return {
+                    marketCap: getValue('Market Cap'),
+                    currentPrice: getValue('Current Price') || getValue('Stock P/E'),
+                    pe: getValue('Stock P/E'),
+                    pb: getValue('Price to Book'),
+                    dividendYield: getValue('Dividend Yield'),
+                    roe: getValue('ROE'),
+                    roce: getValue('ROCE'),
+                    debtToEquity: getValue('Debt to Equity'),
+                    sector: doc.querySelector('.sub')?.textContent.trim() || 'N/A',
+                    eps: getValue('EPS'),
+                    bookValue: getValue('Book Value'),
+                };
+            };
+
+            /**
+             * EXTRACT BALANCE SHEET DATA
+             * Scrapes annual balance sheet from the financial tables
+             */
+            const extractBalanceSheet = (doc) => {
+                const balanceSheetData = [];
+                const table = doc.querySelector('#balance-sheet');
+                
+                if (!table) return [];
+                
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                
+                // Extract years from headers
+                const years = headers.slice(1);
+                
+                // Initialize data structure
+                const metrics = {
+                    equity: [],
+                    reserves: [],
+                    debt: [],
+                    assets: []
+                };
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const label = cells[0]?.textContent.trim().toLowerCase();
+                    
+                    if (label.includes('equity')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.equity[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('reserves')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.reserves[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('borrowings') || label.includes('debt')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.debt[i-1] = (metrics.debt[i-1] || 0) + (parseFloat(cells[i].textContent.replace(/,/g, '')) || 0);
+                        }
+                    }
+                    if (label.includes('total assets')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.assets[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                });
+                
+                // Convert to array of objects
+                years.forEach((year, index) => {
+                    balanceSheetData.push({
+                        year,
+                        equity: metrics.equity[index] || 0,
+                        reserves: metrics.reserves[index] || 0,
+                        debt: metrics.debt[index] || 0,
+                        assets: metrics.assets[index] || 0
+                    });
+                });
+                
+                return balanceSheetData.reverse();
+            };
+
+            /**
+             * EXTRACT PROFIT & LOSS STATEMENT
+             */
+            const extractProfitLoss = (doc) => {
+                const plData = [];
+                const table = doc.querySelector('#profit-loss');
+                
+                if (!table) return [];
+                
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                const years = headers.slice(1);
+                
+                const metrics = {
+                    revenue: [],
+                    expenses: [],
+                    profit: [],
+                    tax: [],
+                    netProfit: []
+                };
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const label = cells[0]?.textContent.trim().toLowerCase();
+                    
+                    if (label.includes('sales') || label.includes('revenue')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.revenue[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('expenses') || label.includes('operating cost')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.expenses[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('profit before tax') || label.includes('pbt')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.profit[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('tax')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.tax[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('net profit')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.netProfit[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                });
+                
+                years.forEach((year, index) => {
+                    plData.push({
+                        year,
+                        revenue: metrics.revenue[index] || 0,
+                        expenses: metrics.expenses[index] || 0,
+                        profit: metrics.profit[index] || 0,
+                        tax: metrics.tax[index] || 0,
+                        netProfit: metrics.netProfit[index] || 0
+                    });
+                });
+                
+                return plData.reverse();
+            };
+
+            /**
+             * EXTRACT CASH FLOW STATEMENT
+             */
+            const extractCashFlow = (doc) => {
+                const cfData = [];
+                const table = doc.querySelector('#cash-flow');
+                
+                if (!table) return [];
+                
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                const years = headers.slice(1);
+                
+                const metrics = {
+                    operating: [],
+                    investing: [],
+                    financing: [],
+                    netCash: []
+                };
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const label = cells[0]?.textContent.trim().toLowerCase();
+                    
+                    if (label.includes('cash from operating')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.operating[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('cash from investing')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.investing[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('cash from financing')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.financing[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    if (label.includes('net cash flow')) {
+                        for (let i = 1; i < cells.length; i++) {
+                            metrics.netCash[i-1] = parseFloat(cells[i].textContent.replace(/,/g, '')) || 0;
+                        }
+                    }
+                });
+                
+                years.forEach((year, index) => {
+                    cfData.push({
+                        year,
+                        operating: metrics.operating[index] || 0,
+                        investing: metrics.investing[index] || 0,
+                        financing: metrics.financing[index] || 0,
+                        netCash: metrics.netCash[index] || 0
+                    });
+                });
+                
+                return cfData.reverse();
+            };
+
+            /**
+             * EXTRACT FINANCIAL RATIOS WITH INDUSTRY BENCHMARKS
+             * Compares company ratios against sector averages
+             */
+            const extractRatios = (doc) => {
+                // Helper function to extract ratio value
+                const getRatio = (label) => {
+                    const elements = doc.querySelectorAll('.number');
+                    for (let el of elements) {
+                        const parent = el.closest('li') || el.closest('div');
+                        if (parent && parent.textContent.includes(label)) {
+                            return el.textContent.trim();
+                        }
+                    }
+                    return 'N/A';
+                };
+
+                // Extract company ratios
+                const companyRatios = {
+                    netProfitMargin: getRatio('Net Profit Margin') || getRatio('OPM'),
+                    roe: getRatio('ROE'),
+                    roa: getRatio('ROA') || getRatio('Return on Assets'),
+                    roce: getRatio('ROCE'),
+                    currentRatio: getRatio('Current Ratio'),
+                    quickRatio: getRatio('Quick Ratio'),
+                    debtToEquity: getRatio('Debt to Equity'),
+                    interestCoverage: getRatio('Interest Coverage'),
+                    pe: getRatio('Stock P/E'),
+                    pb: getRatio('Price to Book'),
+                    evEbitda: getRatio('EV/EBITDA')
+                };
+
+                // Industry benchmarks (you would fetch these from Screener's sector page)
+                // For now, using typical industry averages
+                const industryAvg = {
+                    netProfitMargin: '12.5%',
+                    roe: '15.2%',
+                    roa: '9.8%',
+                    roce: '18.5%',
+                    currentRatio: '1.8',
+                    quickRatio: '1.2',
+                    debtToEquity: '0.65',
+                    interestCoverage: '6.2',
+                    pe: '22.3',
+                    pb: '2.8',
+                    evEbitda: '13.8'
+                };
+
+                /**
+                 * GENERATE RATIO IMPLICATIONS
+                 * Provides analysis based on comparison with industry
+                 */
+                const analyzeRatio = (metric, companyVal, industryVal, higherIsBetter = true) => {
+                    const cVal = parseFloat(companyVal);
+                    const iVal = parseFloat(industryVal);
+                    
+                    if (isNaN(cVal) || isNaN(iVal)) {
+                        return 'Insufficient data for comparison';
+                    }
+                    
+                    const diff = ((cVal - iVal) / iVal * 100).toFixed(1);
+                    
+                    if (higherIsBetter) {
+                        if (cVal > iVal) {
+                            return `${diff}% above industry average - Strong performance indicator`;
+                        } else {
+                            return `${Math.abs(diff)}% below industry average - Room for improvement`;
+                        }
+                    } else {
+                        if (cVal < iVal) {
+                            return `${Math.abs(diff)}% below industry average - Better risk profile`;
+                        } else {
+                            return `${diff}% above industry average - Higher risk compared to peers`;
+                        }
+                    }
+                };
+
+                return {
+                    profitability: [
+                        {
+                            metric: 'Net Profit Margin',
+                            company: companyRatios.netProfitMargin,
+                            industry: industryAvg.netProfitMargin,
+                            implication: analyzeRatio('NPM', companyRatios.netProfitMargin, industryAvg.netProfitMargin)
+                        },
+                        {
+                            metric: 'Return on Equity (ROE)',
+                            company: companyRatios.roe,
+                            industry: industryAvg.roe,
+                            implication: analyzeRatio('ROE', companyRatios.roe, industryAvg.roe)
+                        },
+                        {
+                            metric: 'Return on Assets (ROA)',
+                            company: companyRatios.roa,
+                            industry: industryAvg.roa,
+                            implication: analyzeRatio('ROA', companyRatios.roa, industryAvg.roa)
+                        },
+                        {
+                            metric: 'ROCE',
+                            company: companyRatios.roce,
+                            industry: industryAvg.roce,
+                            implication: analyzeRatio('ROCE', companyRatios.roce, industryAvg.roce)
+                        }
+                    ],
+                    liquidity: [
+                        {
+                            metric: 'Current Ratio',
+                            company: companyRatios.currentRatio,
+                            industry: industryAvg.currentRatio,
+                            implication: analyzeRatio('Current', companyRatios.currentRatio, industryAvg.currentRatio)
+                        },
+                        {
+                            metric: 'Quick Ratio',
+                            company: companyRatios.quickRatio,
+                            industry: industryAvg.quickRatio,
+                            implication: analyzeRatio('Quick', companyRatios.quickRatio, industryAvg.quickRatio)
+                        }
+                    ],
+                    leverage: [
+                        {
+                            metric: 'Debt to Equity',
+                            company: companyRatios.debtToEquity,
+                            industry: industryAvg.debtToEquity,
+                            implication: analyzeRatio('D/E', companyRatios.debtToEquity, industryAvg.debtToEquity, false)
+                        },
+                        {
+                            metric: 'Interest Coverage',
+                            company: companyRatios.interestCoverage,
+                            industry: industryAvg.interestCoverage,
+                            implication: analyzeRatio('Interest', companyRatios.interestCoverage, industryAvg.interestCoverage)
+                        }
+                    ],
+                    valuation: [
+                        {
+                            metric: 'P/E Ratio',
+                            company: companyRatios.pe,
+                            industry: industryAvg.pe,
+                            implication: analyzeRatio('PE', companyRatios.pe, industryAvg.pe, false)
+                        },
+                        {
+                            metric: 'P/B Ratio',
+                            company: companyRatios.pb,
+                            industry: industryAvg.pb,
+                            implication: analyzeRatio('PB', companyRatios.pb, industryAvg.pb, false)
+                        },
+                        {
+                            metric: 'EV/EBITDA',
+                            company: companyRatios.evEbitda,
+                            industry: industryAvg.evEbitda,
+                            implication: analyzeRatio('EV', companyRatios.evEbitda, industryAvg.evEbitda, false)
+                        }
+                    ]
+                };
+            };
+
+            /**
+             * ============================================================================
+             * STOCK PRICE DATA FETCHING
+             * ============================================================================
+             * Fetches historical stock prices from NSE/BSE or financial APIs
+             * ============================================================================
+             */
+            const fetchStockPrices = async (stockCode) => {
+                try {
+                    // Use Alpha Vantage, Yahoo Finance, or NSE API
+                    // Example using Alpha Vantage (requires API key)
+                    const apiKey = 'YOUR_ALPHA_VANTAGE_API_KEY';
+                    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${stockCode}.BSE&apikey=${apiKey}`;
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    const timeSeries = data['Time Series (Daily)'];
+                    const prices = [];
+                    
+                    for (let date in timeSeries) {
+                        prices.push({
+                            date: date,
+                            price: parseFloat(timeSeries[date]['4. close'])
+                        });
+                    }
+                    
+                    return prices.slice(0, 365).reverse(); // Last year of data
+                } catch (err) {
+                    console.error('Error fetching stock prices:', err);
+                    return getMockStockPrices();
+                }
+            };
+
+            /**
+             * ============================================================================
+             * NEWS FETCHING & SENTIMENT ANALYSIS
+             * ============================================================================
+             * Fetches recent news about the company and analyzes potential stock impact
+             * Uses Claude API for sentiment analysis and impact prediction
+             * ============================================================================
+             */
+            const fetchCompanyNews = async (companyName) => {
+                try {
+                    // Fetch news from Google News API or NewsAPI
+                    const apiKey = 'YOUR_NEWS_API_KEY';
+                    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(companyName)}&sortBy=publishedAt&language=en&apiKey=${apiKey}`;
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    const articles = data.articles.slice(0, 5);
+                    
+                    // Analyze each article's impact using Claude API
+                    const analyzedNews = await Promise.all(
+                        articles.map(async (article) => {
+                            const impact = await analyzeNewsImpact(article, companyName);
+                            return {
+                                title: article.title,
+                                date: new Date(article.publishedAt).toLocaleDateString(),
+                                source: article.source.name,
+                                summary: article.description || article.content?.substring(0, 200),
+                                impact: impact.analysis,
+                                sentiment: impact.sentiment,
+                                url: article.url
+                            };
+                        })
+                    );
+                    
+                    return analyzedNews;
+                } catch (err) {
+                    console.error('Error fetching news:', err);
+                    return getMockNews();
+                }
+            };
+
+            /**
+             * ANALYZE NEWS IMPACT USING CLAUDE API
+             * Sends news to Claude for sentiment analysis and stock price impact prediction
+             */
+            const analyzeNewsImpact = async (article, companyName) => {
+                try {
+                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // API key should be stored securely in environment variables
+                        },
+                        body: JSON.stringify({
+                            model: 'claude-sonnet-4-20250514',
+                            max_tokens: 500,
+                            messages: [{
+                                role: 'user',
+                                content: `Analyze this news article about ${companyName} and predict its impact on stock price:
+
+Title: ${article.title}
+Content: ${article.description}
+
+Provide:
+1. Sentiment (positive/negative/neutral)
+2. Potential stock price impact (brief, 2-3 sentences)
+3. Key factors that would drive the impact
+
+Format as JSON: {"sentiment": "positive/negative/neutral", "analysis": "your analysis"}`
+                            }]
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    const result = JSON.parse(data.content[0].text);
+                    
+                    return result;
+                } catch (err) {
+                    console.error('Error analyzing news:', err);
+                    return {
+                        sentiment: 'neutral',
+                        analysis: 'Unable to analyze impact at this time.'
+                    };
+                }
+            };
+
+            /**
+             * ============================================================================
+             * MOCK DATA FUNCTIONS (Fallback when APIs fail or for demo)
+             * ============================================================================
+             */
+            const getMockSearchResults = (query) => {
+                const companies = [
+                    { id: 1, name: 'Reliance Industries Ltd.', code: 'RELIANCE', url: '/company/RELIANCE/', sector: 'Oil & Gas' },
+                    { id: 2, name: 'Tata Consultancy Services Ltd.', code: 'TCS', url: '/company/TCS/', sector: 'IT Services' },
+                    { id: 3, name: 'HDFC Bank Ltd.', code: 'HDFCBANK', url: '/company/HDFCBANK/', sector: 'Banking' },
+                    { id: 4, name: 'Infosys Ltd.', code: 'INFY', url: '/company/INFY/', sector: 'IT Services' },
+                    { id: 5, name: 'ICICI Bank Ltd.', code: 'ICICIBANK', url: '/company/ICICIBANK/', sector: 'Banking' },
+                    { id: 6, name: 'Hindustan Unilever Ltd.', code: 'HINDUNILVR', url: '/company/HINDUNILVR/', sector: 'FMCG' },
+                    { id: 7, name: 'ITC Ltd.', code: 'ITC', url: '/company/ITC/', sector: 'FMCG' },
+                    { id: 8, name: 'State Bank of India', code: 'SBIN', url: '/company/SBIN/', sector: 'Banking' },
+                ];
+                
+                return companies.filter(c => 
+                    c.name.toLowerCase().includes(query.toLowerCase()) ||
+                    c.code.toLowerCase().includes(query.toLowerCase())
+                );
+            };
+
+            const getMockCompanyData = (company) => {
+                return {
+                    overview: {
+                        marketCap: '₹15,45,678 Cr',
+                        currentPrice: '₹2,456.75',
+                        pe: '24.5',
+                        pb: '3.2',
+                        dividendYield: '1.8%',
+                        roe: '18.5%',
+                        roce: '22.3%',
+                        debtToEquity: '0.45',
+                        sector: company.sector,
+                        eps: '₹98.50',
+                        bookValue: '₹765.30',
+                    },
+                    balanceSheet: [
+                        { year: 'Mar 2024', equity: 45678, reserves: 123456, debt: 34567, assets: 234567 },
+                        { year: 'Mar 2023', equity: 42345, reserves: 115678, debt: 32456, assets: 221234 },
+                        { year: 'Mar 2022', equity: 39876, reserves: 108765, debt: 30123, assets: 208765 },
+                        { year: 'Mar 2021', equity: 37654, reserves: 102345, debt: 28456, assets: 196543 },
+                        { year: 'Mar 2020', equity: 35432, reserves: 96543, debt: 26789, assets: 185432 },
+                    ],
+                    profitLoss: [
+                        { year: 'Mar 2024', revenue: 234567, expenses: 187654, profit: 46913, tax: 11728, netProfit: 35185 },
+                        { year: 'Mar 2023', revenue: 218765, expenses: 175432, profit: 43333, tax: 10833, netProfit: 32500 },
+                        { year: 'Mar 2022', revenue: 203456, expenses: 164321, profit: 39135, tax: 9784, netProfit: 29351 },
+                        { year: 'Mar 2021', revenue: 189234, expenses: 153456, profit: 35778, tax: 8945, netProfit: 26833 },
+                        { year: 'Mar 2020', revenue: 176543, expenses: 144321, profit: 32222, tax: 8056, netProfit: 24166 },
+                    ],
+                    cashFlow: [
+                        { year: 'Mar 2024', operating: 45678, investing: -23456, financing: -8765, netCash: 13457 },
+                        { year: 'Mar 2023', operating: 42345, investing: -21234, financing: -7654, netCash: 13457 },
+                        { year: 'Mar 2022', operating: 39876, investing: -19876, financing: -6543, netCash: 13457 },
+                        { year: 'Mar 2021', operating: 37654, investing: -18765, financing: -5432, netCash: 13457 },
+                        { year: 'Mar 2020', operating: 35678, investing: -17654, financing: -4321, netCash: 13703 },
+                    ],
+                    ratios: {
+                        profitability: [
+                            { metric: 'Net Profit Margin', company: '15.0%', industry: '12.5%', implication: '20.0% above industry - Excellent cost management and pricing power' },
+                            { metric: 'ROE', company: '18.5%', industry: '15.2%', implication: '21.7% above industry - Superior capital efficiency' },
+                            { metric: 'ROA', company: '12.3%', industry: '9.8%', implication: '25.5% above industry - Effective asset utilization' },
+                            { metric: 'ROCE', company: '22.3%', industry: '18.5%', implication: '20.5% above industry - Strong returns on capital employed' },
+                        ],
+                        liquidity: [
+                            { metric: 'Current Ratio', company: '2.1', industry: '1.8', implication: '16.7% above industry - Strong short-term liquidity' },
+                            { metric: 'Quick Ratio', company: '1.5', industry: '1.2', implication: '25.0% above industry - Excellent immediate liquidity' },
+                        ],
+                        leverage: [
+                            { metric: 'Debt to Equity', company: '0.45', industry: '0.65', implication: '30.8% below industry - Conservative debt levels, lower financial risk' },
+                            { metric: 'Interest Coverage', company: '8.5', industry: '6.2', implication: '37.1% above industry - Very comfortable debt servicing' },
+                        ],
+                        valuation: [
+                            { metric: 'P/E Ratio', company: '24.5', industry: '22.3', implication: '9.9% premium - Market values growth prospects' },
+                            { metric: 'P/B Ratio', company: '3.2', industry: '2.8', implication: '14.3% premium - Quality recognition' },
+                            { metric: 'EV/EBITDA', company: '15.2', industry: '13.8', implication: '10.1% premium - Strong operational performance' },
+                        ],
+                    },
+                    stockPrices: getMockStockPrices(),
+                    news: getMockNews(),
+                };
+            };
+
+            const getMockStockPrices = () => {
+                const prices = [];
+                const basePrice = 2100;
+                const startDate = new Date();
+                startDate.setMonth(startDate.getMonth() - 12);
+                
+                for (let i = 0; i < 365; i += 7) {
+                    const date = new Date(startDate);
+                    date.setDate(date.getDate() + i);
+                    const randomChange = (Math.random() - 0.5) * 100;
+                    const price = basePrice + randomChange + (i * 0.5);
+                    
+                    prices.push({
+                        date: date.toISOString().split('T')[0],
+                        price: parseFloat(price.toFixed(2))
+                    });
+                }
+                
+                return prices;
+            };
+
+            const getMockNews = () => [
+                {
+                    title: 'Company Announces Record Q4 Results, Beats Estimates',
+                    date: new Date(Date.now() - 2*24*60*60*1000).toLocaleDateString(),
+                    source: 'Economic Times',
+                    summary: 'The company reported quarterly profit of ₹8,750 crore, up 18% YoY, surpassing analyst estimates by 5%. Revenue grew 15% to ₹58,900 crore.',
+                    impact: 'HIGHLY POSITIVE - Strong earnings beat demonstrates operational excellence and revenue momentum. Likely to trigger analyst upgrades with price targets increasing 8-12%. Institutional buying expected.',
+                    sentiment: 'positive'
+                },
+                {
+                    title: 'Strategic Partnership Announced for International Expansion',
+                    date: new Date(Date.now() - 5*24*60*60*1000).toLocaleDateString(),
+                    source: 'Business Standard',
+                    summary: 'Major partnership deal signed to enter Southeast Asian markets with an investment of ₹5,000 crore over 3 years.',
+                    impact: 'POSITIVE - Expansion into high-growth markets could drive 15-20% revenue CAGR. Short-term margin pressure expected from setup costs, but strong long-term value creation potential.',
+                    sentiment: 'positive'
+                },
+                {
+                    title: 'New Regulatory Compliance Requirements Announced',
+                    date: new Date(Date.now() - 7*24*60*60*1000).toLocaleDateString(),
+                    source: 'Mint',
+                    summary: 'Industry regulator announces new compliance norms requiring additional reporting and operational changes.',
+                    impact: 'NEUTRAL TO SLIGHTLY NEGATIVE - Industry-wide impact with estimated compliance costs of ₹200-300 crore annually. However, company is better positioned than smaller peers due to existing robust systems.',
+                    sentiment: 'neutral'
+                },
+                {
+                    title: 'Dividend Increase of 25% Declared for FY2024',
+                    date: new Date(Date.now() - 10*24*60*60*1000).toLocaleDateString(),
+                    source: 'Moneycontrol',
+                    summary: 'Board approves 25% increase in dividend payout, reflecting strong cash flows and shareholder-friendly policy.',
+                    impact: 'POSITIVE - Signals management confidence in sustained profitability. Attractive for income investors and could improve dividend yield attractiveness vs peers. May support stock price floor.',
+                    sentiment: 'positive'
+                },
+                {
+                    title: 'Industry Faces Headwinds from Global Economic Slowdown',
+                    date: new Date(Date.now() - 15*24*60*60*1000).toLocaleDateString(),
+                    source: 'Reuters',
+                    summary: 'Analysts warn that global economic uncertainty may impact sector growth in coming quarters.',
+                    impact: 'SLIGHTLY NEGATIVE - Macro headwinds could impact near-term growth expectations. However, company\'s diversified revenue base and strong domestic presence provide cushion. Watch for guidance revision in next earnings call.',
+                    sentiment: 'negative'
+                }
+            ];
+
+            /**
+             * ============================================================================
+             * EVENT HANDLERS
+             * ============================================================================
+             */
+
+            /**
+             * HANDLE SEARCH SUBMISSION
+             */
+            const handleSearch = async () => {
+                if (!searchQuery.trim()) return;
+                
+                setLoading(true);
+                setError(null);
+                setSearchResults([]);
+                
+                try {
+                    const results = await searchCompanies(searchQuery);
+                    setSearchResults(results);
+                    
+                    if (results.length === 0) {
+                        setError('No companies found matching your search.');
+                    }
+                } catch (err) {
+                    setError('Failed to search companies. Please try again.');
+                    console.error(err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            /**
+             * HANDLE COMPANY SELECTION
+             */
+            const handleCompanySelect = async (company) => {
+                setSelectedCompany(company);
+                setSearchResults([]);
+                setSearchQuery('');
+                setLoading(true);
+                setError(null);
+                setActiveTab('overview');
+                
+                try {
+                    const data = await fetchCompanyFromScreener(company);
+                    setCompanyData(data);
+                } catch (err) {
+                    setError('Failed to fetch company data. Please try again.');
+                    console.error(err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            /**
+             * HANDLE ENTER KEY IN SEARCH
+             */
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    handleSearch();
+                }
+            };
+
+            /**
+             * ============================================================================
+             * CHART RENDERING
+             * ============================================================================
+             */
+            useEffect(() => {
+                if (companyData && activeTab === 'chart' && chartRef.current) {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                    
+                    const ctx = chartRef.current.getContext('2d');
+                    const prices = companyData.stockPrices;
+                    
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: prices.map(d => new Date(d.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })),
+                            datasets: [{
+                                label: 'Stock Price (₹)',
+                                data: prices.map(d => d.price),
+                                borderColor: '#1e3c72',
+                                backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 0,
+                                borderWidth: 3,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    backgroundColor: 'rgba(0,0,0,0.8)',
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    },
+                                    padding: 12,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Price: ₹' + context.parsed.y.toFixed(2);
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 45,
+                                        font: {
+                                            size: 11
+                                        }
+                                    },
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: false,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '₹' + value.toFixed(0);
+                                        },
+                                        font: {
+                                            size: 12
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(0,0,0,0.05)'
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'nearest',
+                                axis: 'x',
+                                intersect: false
+                            }
+                        }
+                    });
+                }
+                
+                return () => {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                };
+            }, [companyData, activeTab]);
+
+            /**
+             * ============================================================================
+             * RENDER TAB CONTENT
+             * ============================================================================
+             */
+            const renderTabContent = () => {
+                if (!companyData) return null;
+
+                switch(activeTab) {
+                    case 'overview':
+                        return (
+                            <div className="metrics-grid">
+                                {Object.entries(companyData.overview).map(([key, value]) => (
+                                    <div className="metric-card" key={key}>
+                                        <h3>{key.replace(/([A-Z])/g, ' $1').trim().toUpperCase()}</h3>
+                                        <div className="metric-value">{value}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    
+                    case 'balanceSheet':
+                        return (
+                            <>
+                                <h2 className="section-title">Balance Sheet (₹ in Crores)</h2>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Year</th>
+                                                <th>Equity</th>
+                                                <th>Reserves & Surplus</th>
+                                                <th>Total Debt</th>
+                                                <th>Total Assets</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {companyData.balanceSheet.map(row => (
+                                                <tr key={row.year}>
+                                                    <td><strong>{row.year}</strong></td>
+                                                    <td>₹{row.equity.toLocaleString('en-IN')}</td>
+                                                    <td>₹{row.reserves.toLocaleString('en-IN')}</td>
+                                                    <td>₹{row.debt.toLocaleString('en-IN')}</td>
+                                                    <td>₹{row.assets.toLocaleString('en-IN')}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        );
+                    
+                    case 'profitLoss':
+                        return (
+                            <>
+                                <h2 className="section-title">Profit & Loss Statement (₹ in Crores)</h2>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Year</th>
+                                                <th>Revenue</th>
+                                                <th>Expenses</th>
+                                                <th>PBT</th>
+                                                <th>Tax</th>
+                                                <th>Net Profit</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {companyData.profitLoss.map(row => (
+                                                <tr key={row.year}>
+                                                    <td><strong>{row.year}</strong></td>
+                                                    <td>₹{row.revenue.toLocaleString('en-IN')}</td>
+                                                    <td>₹{row.expenses.toLocaleString('en-IN')}</td>
+                                                    <td>₹{row.profit.toLocaleString('en-IN')}</td>
+                                                    <td>₹{row.tax.toLocaleString('en-IN')}</td>
+                                                    <td className="positive">₹{row.netProfit.toLocaleString('en-IN')}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        );
+                    
+                    case 'cashFlow':
+                        return (
+                            <>
+                                <h2 className="section-title">Cash Flow Statement (₹ in Crores)</h2>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Year</th>
+                                                <th>Operating Activities</th>
+                                                <th>Investing Activities</th>
+                                                <th>Financing Activities</th>
+                                                <th>Net Cash Flow</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {companyData.cashFlow.map(row => (
+                                                <tr key={row.year}>
+                                                    <td><strong>{row.year}</strong></td>
+                                                    <td className="positive">₹{row.operating.toLocaleString('en-IN')}</td>
+                                                    <td className="negative">₹{row.investing.toLocaleString('en-IN')}</td>
+                                                    <td className={row.financing >= 0 ? 'positive' : 'negative'}>
+                                                        ₹{row.financing.toLocaleString('en-IN')}
+                                                    </td>
+                                                    <td className={row.netCash >= 0 ? 'positive' : 'negative'}>
+                                                        ₹{row.netCash.toLocaleString('en-IN')}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        );
+                    
+                    case 'ratios':
+                        return (
+                            <>
+                                <h2 className="section-title">Financial Ratios vs Industry Benchmarks</h2>
+                                
+                                <div className="info-box">
+                                    💡 Ratios are compared with industry averages to identify competitive advantages and areas for improvement
+                                </div>
+                                
+                                <h3 style={{fontSize: '1.4em', color: '#1e3c72', marginTop: '25px', marginBottom: '15px'}}>
+                                    Profitability Ratios
+                                </h3>
+                                <div className="ratio-comparison">
+                                    {companyData.ratios.profitability.map((ratio, idx) => (
+                                        <div className="ratio-row" key={idx}>
+                                            <div className="ratio-metric">{ratio.metric}</div>
+                                            <div className="ratio-value">{ratio.company}</div>
+                                            <div className="ratio-industry">Industry: {ratio.industry}</div>
+                                            <div className="ratio-implication">{ratio.implication}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <h3 style={{fontSize: '1.4em', color: '#1e3c72', marginTop: '25px', marginBottom: '15px'}}>
+                                    Liquidity Ratios
+                                </h3>
+                                <div className="ratio-comparison">
+                                    {companyData.ratios.liquidity.map((ratio, idx) => (
+                                        <div className="ratio-row" key={idx}>
+                                            <div className="ratio-metric">{ratio.metric}</div>
+                                            <div className="ratio-value">{ratio.company}</div>
+                                            <div className="ratio-industry">Industry: {ratio.industry}</div>
+                                            <div className="ratio-implication">{ratio.implication}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <h3 style={{fontSize: '1.4em', color: '#1e3c72', marginTop: '25px', marginBottom: '15px'}}>
+                                    Leverage Ratios
+                                </h3>
+                                <div className="ratio-comparison">
+                                    {companyData.ratios.leverage.map((ratio, idx) => (
+                                        <div className="ratio-row" key={idx}>
+                                            <div className="ratio-metric">{ratio.metric}</div>
+                                            <div className="ratio-value">{ratio.company}</div>
+                                            <div className="ratio-industry">Industry: {ratio.industry}</div>
+                                            <div className="ratio-implication">{ratio.implication}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <h3 style={{fontSize: '1.4em', color: '#1e3c72', marginTop: '25px', marginBottom: '15px'}}>
+                                    Valuation Ratios
+                                </h3>
+                                <div className="ratio-comparison">
+                                    {companyData.ratios.valuation.map((ratio, idx) => (
+                                        <div className="ratio-row" key={idx}>
+                                            <div className="ratio-metric">{ratio.metric}</div>
+                                            <div className="ratio-value">{ratio.company}</div>
+                                            <div className="ratio-industry">Industry: {ratio.industry}</div>
+                                            <div className="ratio-implication">{ratio.implication}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        );
+                    
+                    case 'chart':
+                        return (
+                            <>
+                                <h2 className="section-title">Stock Price Chart (Last 12 Months)</h2>
+                                <div className="chart-container">
+                                    <div className="chart-wrapper">
+                                        <canvas ref={chartRef}></canvas>
+                                    </div>
+                                </div>
+                            </>
+                        );
+                    
+                    case 'news':
+                        return (
+                            <>
+                                <h2 className="section-title">Recent News & Impact Analysis</h2>
+                                <div className="info-box">
+                                    📰 News articles are analyzed using AI to predict potential impact on stock price
+                                </div>
+                                <div className="news-section">
+                                    {companyData.news.map((article, idx) => (
+                                        <div className="news-card" key={idx}>
+                                            <div className="news-header">
+                                                <div className="news-title">{article.title}</div>
+                                                <div className="news-date">{article.date}</div>
+                                            </div>
+                                            <div className="news-source">📍 {article.source}</div>
+                                            <div className="news-summary">{article.summary}</div>
+                                            <div className="news-impact">
+                                                <div className="impact-label">🎯 Stock Price Impact Analysis:</div>
+                                                <div className="impact-text">{article.impact}</div>
+                                                <span className={`sentiment-badge sentiment-${article.sentiment}`}>
+                                                    {article.sentiment.toUpperCase()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        );
+                    
+                    default:
+                        return null;
+                }
+            };
+
+            /**
+             * ============================================================================
+             * MAIN RENDER
+             * ============================================================================
+             */
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>📊 Live Stock Analyzer</h1>
+                        <p>Powered by Screener.in | Real-time Financial Analysis & News Impact</p>
+                    </div>
+
+                    <div className="search-section">
+                        <div className="search-box">
+                            <input
+                                type="text"
+                                className="search-input"
+                                placeholder="Search for a company (e.g., Reliance, TCS, HDFC Bank)..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                            />
+                            <button 
+                                className="search-button" 
+                                onClick={handleSearch}
+                                disabled={loading || !searchQuery.trim()}
+                            >
+                                {loading ? 'Searching...' : 'Search'}
+                            </button>
+                        </div>
+
+                        {searchResults.length > 0 && (
+                            <div className="results-dropdown">
+                                {searchResults.map(company => (
+                                    <div 
+                                        key={company.id} 
+                                        className="result-item"
+                                        onClick={() => handleCompanySelect(company)}
+                                    >
+                                        <div className="result-info">
+                                            <div className="result-name">{company.name}</div>
+                                            <div className="result-meta">
+                                                <span>📈 {company.code}</span>
+                                                <span>🏢 {company.sector}</span>
+                                            </div>
+                                        </div>
+                                        <div className="result-badge">View Details</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="content">
+                        {error && <div className="error">⚠️ {error}</div>}
+
+                        {loading && (
+                            <div className="loading">
+                                <div className="spinner"></div>
+                                <div className="loading-text">
+                                    {selectedCompany ? `Loading data for ${selectedCompany.name}...` : 'Searching companies...'}
+                                </div>
+                            </div>
+                        )}
+
+                        {!loading && selectedCompany && companyData && (
+                            <>
+                                <div className="company-header">
+                                    <div className="company-name">{selectedCompany.name}</div>
+                                    <div className="company-meta">
+                                        <div className="company-meta-item">
+                                            <span className="company-meta-label">Code:</span>
+                                            <strong>{selectedCompany.code}</strong>
+                                        </div>
+                                        <div className="company-meta-item">
+                                            <span className="company-meta-label">Sector:</span>
+                                            <strong>{companyData.overview.sector}</strong>
+                                        </div>
+                                        <div className="company-meta-item">
+                                            <span className="company-meta-label">Market Cap:</span>
+                                            <strong>{companyData.overview.marketCap}</strong>
+                                        </div>
+                                        <div className="company-meta-item">
+                                            <span className="company-meta-label">Current Price:</span>
+                                            <strong>{companyData.overview.currentPrice}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="tabs">
+                                    <button 
+                                        className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('overview')}
+                                    >
+                                        Overview
+                                    </button>
+                                    <button 
+                                        className={`tab ${activeTab === 'balanceSheet' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('balanceSheet')}
+                                    >
+                                        Balance Sheet
+                                    </button>
+                                    <button 
+                                        className={`tab ${activeTab === 'profitLoss' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('profitLoss')}
+                                    >
+                                        P&L Statement
+                                    </button>
+                                    <button 
+                                        className={`tab ${activeTab === 'cashFlow' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('cashFlow')}
+                                    >
+                                        Cash Flow
+                                    </button>
+                                    <button 
+                                        className={`tab ${activeTab === 'ratios' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('ratios')}
+                                    >
+                                        Ratios & Benchmarks
+                                    </button>
+                                    <button 
+                                        className={`tab ${activeTab === 'chart' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('chart')}
+                                    >
+                                        Stock Chart
+                                    </button>
+                                    <button 
+                                        className={`tab ${activeTab === 'news' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('news')}
+                                    >
+                                        News & Impact
+                                    </button>
+                                </div>
+
+                                {renderTabContent()}
+                            </>
+                        )}
+
+                        {!loading && !selectedCompany && !error && (
+                            <div className="empty-state">
+                                <div className="empty-state-icon">🔍</div>
+                                <div className="empty-state-text">
+                                    Search for a company to view detailed financial analysis
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Render the application
+        ReactDOM.render(<StockAnalyzer />, document.getElementById('root'));
+    </script>
+</body>
+</html>

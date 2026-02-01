@@ -1,0 +1,15 @@
+# Python Backend Requirements for Stock Analyzer
+# Install with: pip install -r requirements.txt
+
+flask==3.0.0
+flask-cors==4.0.0
+requests==2.31.0
+beautifulsoup4==4.12.2
+pandas==2.1.4
+numpy==1.26.2
+lxml==4.9.3
+
+# Optional - for enhanced functionality
+redis==5.0.1  # For caching
+python-dotenv==1.0.0  # For environment variables
+gunicorn==21.2.0  # For production deployment
