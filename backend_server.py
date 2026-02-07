@@ -20,7 +20,32 @@ import json
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
+# Add to backend_server.py
+import anthropic
 
+def analyze_news_with_claude(article, company_name):
+    client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+    
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=500,
+        messages=[{
+            "role": "user",
+            "content": f"""Analyze this news article about {company_name}:
+            
+            Title: {article['title']}
+            Content: {article['summary']}
+            
+            Provide:
+            1. Sentiment (positive/negative/neutral)
+            2. Stock price impact prediction (2-3 sentences)
+            3. Confidence score (0-1)
+            
+            Format as JSON."""
+        }]
+    )
+    
+    return json.loads(message.content[0].text)
 # Load environment variables
 load_dotenv()
 
